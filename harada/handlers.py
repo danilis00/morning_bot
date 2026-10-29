@@ -243,6 +243,17 @@ class Harada:
         async def _help(m: Message):
             await m.answer(HELP, parse_mode="Markdown")
 
+        # Команды сетки из чужого чата: подсказываем, какой CHAT_ID поставить, вместо молчания
+        @r.message(Command("today", "check", "grid", "habits", "progress", "step", "grid_help"))
+        async def _wrong_chat(m: Message):
+            log.warning("Harada: команда из чата %s, а CHAT_ID=%s", m.chat.id, self.chat_id)
+            await m.answer(
+                "Сетка привязана к другому чату.\n"
+                f"Твой chat id: `{m.chat.id}`\n\n"
+                "Поставь свой id в Railway → Variables → CHAT_ID, бот перезапустится сам.",
+                parse_mode="Markdown",
+            )
+
         # --- кнопки: фокус дня ---
         @r.callback_query(F.data.startswith("fd:"), own_cb)
         async def _focus_done(c: CallbackQuery):
