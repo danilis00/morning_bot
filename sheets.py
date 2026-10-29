@@ -19,6 +19,7 @@ class SheetsDB:
         creds_json = os.environ.get("GOOGLE_CREDS_JSON")
         spreadsheet_id = os.environ.get("SPREADSHEET_ID")
 
+        self.spreadsheet = None
         if not creds_json or not spreadsheet_id:
             print("⚠️  GOOGLE_CREDS_JSON or SPREADSHEET_ID not set — running without DB")
             self.sheet = None
@@ -28,6 +29,7 @@ class SheetsDB:
         creds = Credentials.from_service_account_info(creds_data, scopes=SCOPES)
         client = gspread.authorize(creds)
         spreadsheet = client.open_by_key(spreadsheet_id)
+        self.spreadsheet = spreadsheet  # нужен сетке Харады для своих листов
 
         # Use first sheet, create headers if empty
         self.sheet = spreadsheet.sheet1

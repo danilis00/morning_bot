@@ -12,18 +12,24 @@ import pytz
 
 from sheets import SheetsDB
 from dialog import DialogManager
+from harada import core as harada_core
+from harada.store import HaradaStore
+from harada.handlers import Harada, HELP as HARADA_HELP
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = int(os.environ["CHAT_ID"])
-TIMEZONE = os.environ.get("TIMEZONE", "Europe/Moscow")
+TIMEZONE = os.environ.get("TIMEZONE", "Europe/Moscow").strip()
+HABITS_TIME = os.environ.get("HABITS_TIME", "21:00").strip()  # вечерний чек-ин привычек
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 db = SheetsDB()
-dialog = DialogManager(db)
+harada = Harada(HaradaStore(harada_core.load_grid(), db.spreadsheet), CHAT_ID, TIMEZONE)
+dialog = DialogManager(db, on_done=harada.send_today)
+dp.include_router(harada.router)
 
 
 @dp.message(Command("start"))
@@ -35,7 +41,9 @@ async def cmd_start(message: Message):
         "2️⃣ Выбор одного улучшения\n"
         "3️⃣ Напоминание о 30-минутной работе над улучшением\n"
         "4️⃣ План на сегодня\n\n"
-        "Или начни прямо сейчас командой /ritual"
+        "Или начни прямо сейчас командой /ritual\n\n"
+        + HARADA_HELP,
+        parse_mode="Markdown",
     )
 
 
@@ -71,7 +79,7 @@ async def cmd_stats(message: Message):
     await message.answer(text, parse_mode="Markdown")
 
 
-@dp.message(F.text)
+@dp.message(F.text & ~F.text.startswith("/"))
 async def handle_text(message: Message):
     await dialog.handle_answer(bot, message.chat.id, message.text)
 
@@ -87,8 +95,9 @@ async def main():
         scheduled_ritual,
         CronTrigger(hour=7, minute=0, timezone=TIMEZONE),
     )
+    harada.schedule(scheduler, bot, HABITS_TIME)
     scheduler.start()
-    logger.info(f"Scheduler started. Ritual runs at 7:00 {TIMEZONE}")
+    logger.info(f"Scheduler started. Ritual runs at 7:00, habits check-in at {HABITS_TIME} {TIMEZONE}")
     await dp.start_polling(bot)
 
 

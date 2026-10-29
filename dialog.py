@@ -45,8 +45,9 @@ def save_state(state: dict):
 
 
 class DialogManager:
-    def __init__(self, db):
+    def __init__(self, db, on_done=None):
         self.db = db
+        self.on_done = on_done  # async (bot, chat_id) -> None, вызывается после завершения ритуала
 
     def _get(self) -> dict:
         return load_state()
@@ -133,3 +134,9 @@ class DialogManager:
                 "Посмотреть историю: /history\nСтатистика: /stats"
             )
             await bot.send_message(chat_id, summary, parse_mode="Markdown")
+            if self.on_done:
+                try:
+                    await self.on_done(bot, chat_id)
+                except Exception:  # карточка дня не должна ломать ритуал
+                    import logging
+                    logging.getLogger(__name__).exception("on_done failed")
