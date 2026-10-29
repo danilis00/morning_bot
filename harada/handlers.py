@@ -247,11 +247,10 @@ class Harada:
         @r.message(Command("today", "check", "grid", "habits", "progress", "step", "grid_help"))
         async def _wrong_chat(m: Message):
             log.warning("Harada: команда из чата %s, а CHAT_ID=%s", m.chat.id, self.chat_id)
-            await m.answer(
+            await m.answer(  # без Markdown: «_» в CHAT_ID ломает разметку
                 "Сетка привязана к другому чату.\n"
-                f"Твой chat id: `{m.chat.id}`\n\n"
-                "Поставь свой id в Railway → Variables → CHAT_ID, бот перезапустится сам.",
-                parse_mode="Markdown",
+                f"Твой chat id: {m.chat.id}\n\n"
+                "Поставь свой id в Railway → Variables → CHAT_ID, бот перезапустится сам."
             )
 
         # --- кнопки: фокус дня ---
